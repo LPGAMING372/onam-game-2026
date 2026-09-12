@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Onam Odyssey: Legend of the Golden King</title>
+  <title>Maveli's Endless Pookkalam Dash 3D</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
@@ -14,68 +14,72 @@
     }
     #ui-header {
       position: absolute;
-      top: 12px;
+      top: 15px;
       width: 100%;
       text-align: center;
       z-index: 10;
       pointer-events: none;
     }
-    h1 { color: #f59e0b; font-size: 1.2rem; text-shadow: 2px 2px #000; }
-    .status-bar { color: #fde047; font-weight: bold; font-size: 0.9rem; margin-top: 4px; }
+    h1 { color: #f59e0b; font-size: 1.3rem; text-shadow: 2px 2px #000; }
+    .status-bar {
+      color: #fde047;
+      font-weight: bold;
+      font-size: 1rem;
+      margin-top: 6px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
     #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
     .controls {
       position: absolute;
-      bottom: 20px;
+      bottom: 25px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 10;
-      display: grid;
-      grid-template-columns: repeat(3, 58px);
-      grid-gap: 8px;
+      display: flex;
+      gap: 15px;
     }
     .btn {
-      width: 58px;
-      height: 58px;
+      width: 65px;
+      height: 65px;
       background: rgba(217, 119, 6, 0.85);
       color: white;
       font-weight: bold;
-      font-size: 1.3rem;
+      font-size: 1.5rem;
       border: 2px solid #fff;
-      border-radius: 12px;
+      border-radius: 50%;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       touch-action: manipulation;
     }
-    .btn:active { background: #b45309; transform: scale(0.95); }
-    #btn-up { grid-column: 2; }
-    #btn-left { grid-column: 1; grid-row: 2; }
-    #btn-down { grid-column: 2; grid-row: 2; }
-    #btn-right { grid-column: 3; grid-row: 2; }
+    .btn:active { background: #b45309; transform: scale(0.92); }
+    #btn-jump { background: rgba(16, 185, 129, 0.85); font-size: 0.95rem; width: 75px; border-radius: 18px; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
   <div id="ui-header">
-    <h1 id="stage-title">🚩 Stage 1: Village Pookkalam Quest</h1>
+    <h1>🏃 Maveli's Endless Dash 🏃</h1>
     <div class="status-bar">
-      <span id="objective-text">Collect 3 Flowers in the Village!</span>
+      <span id="score-text">Distance: 0m</span>
+      <span id="flower-text">🌺 0</span>
     </div>
   </div>
 
   <div id="canvas-container"></div>
 
   <div class="controls">
-    <button class="btn" id="btn-up">▲</button>
     <button class="btn" id="btn-left">◄</button>
-    <button class="btn" id="btn-down">▼</button>
+    <button class="btn" id="btn-jump">JUMP</button>
     <button class="btn" id="btn-right">►</button>
   </div>
 
 <script>
-  // Audio Synth
+  // Audio Synthesizer
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   function playSound(freq, duration, type = "sine") {
     if (audioCtx.state === "suspended") audioCtx.resume();
@@ -94,251 +98,241 @@
   // Three.js Core Setup
   const container = document.getElementById('canvas-container');
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0f172a);
+  scene.background = new THREE.Color(0x0284c7);
+  scene.fog = new THREE.FogExp2(0x0284c7, 0.012);
 
-  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 5, 9);
+  camera.lookAt(0, 2, -10);
+
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   container.appendChild(renderer.domElement);
 
   // Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
   scene.add(ambientLight);
-  const dirLight = new THREE.DirectionalLight(0xfef08a, 0.8);
+  const dirLight = new THREE.DirectionalLight(0xfef08a, 0.9);
   dirLight.position.set(10, 20, 10);
   dirLight.castShadow = true;
   scene.add(dirLight);
 
+  // Track & Environment Lanes (-3.5, 0, 3.5)
+  const LANES = [-3.5, 0, 3.5];
+  let currentLane = 1;
+
+  const trackFloor = new THREE.Mesh(
+    new THREE.PlaneGeometry(16, 300),
+    new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 })
+  );
+  trackFloor.rotation.x = -Math.PI / 2;
+  trackFloor.position.z = -100;
+  trackFloor.receiveShadow = true;
+  scene.add(trackFloor);
+
+  // Decorative Side Trees
+  const trees = [];
+  for (let z = 20; z > -250; z -= 12) {
+    [-10, 10].forEach(x => {
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 2.5), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+      const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.5, 8), new THREE.MeshStandardMaterial({ color: 0x166534 }));
+      trunk.position.set(x, 1.25, z);
+      leaves.position.set(x, 3.5, z);
+      scene.add(trunk, leaves);
+      trees.push(trunk, leaves);
+    });
+  }
+
   // Player (King Maveli)
   const playerGroup = new THREE.Group();
-  const bodyMesh = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
-  bodyMesh.position.y = 0.7;
+  const bodyMesh = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
+  bodyMesh.position.y = 0.8;
   bodyMesh.castShadow = true;
   playerGroup.add(bodyMesh);
 
-  const crownMesh = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.6, 8), new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.7 }));
-  crownMesh.position.y = 1.5;
+  const crownMesh = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.7, 8), new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.8 }));
+  crownMesh.position.y = 1.7;
   playerGroup.add(crownMesh);
+  
+  playerGroup.position.set(LANES[currentLane], 0, 0);
   scene.add(playerGroup);
 
-  // Stage Groups
-  const stage1Group = new THREE.Group();
-  const stage2Group = new THREE.Group();
-  const stage3Group = new THREE.Group();
-  scene.add(stage1Group);
-  scene.add(stage2Group);
-  scene.add(stage3Group);
+  // Jump Variables
+  let playerY = 0;
+  let velY = 0;
+  const gravity = -0.016;
+  let isGrounded = true;
 
-  // Game State
-  let currentStage = 1;
+  // Game Engine State
+  let gameSpeed = 0.45;
+  let distance = 0;
   let flowersCollected = 0;
   let gameOver = false;
-  let gameWon = false;
-  const speed = 0.18;
-  const keys = {};
 
-  // Input Handling
-  window.addEventListener("keydown", e => keys[e.key] = true);
-  window.addEventListener("keyup", e => keys[e.key] = false);
+  const spawnedObjects = []; // Holds active obstacles and flowers
 
-  function setupTouch(id, keyName) {
-    const btn = document.getElementById(id);
-    btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[keyName] = true; });
-    btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[keyName] = false; });
-    btn.addEventListener("mousedown", () => keys[keyName] = true);
-    btn.addEventListener("mouseup", () => keys[keyName] = false);
+  // Controls
+  function moveLeft() {
+    if (gameOver) return;
+    if (currentLane > 0) { currentLane--; playSound(400, 0.05); }
   }
-  setupTouch("btn-up", "ArrowUp");
-  setupTouch("btn-left", "ArrowLeft");
-  setupTouch("btn-down", "ArrowDown");
-  setupTouch("btn-right", "ArrowRight");
-
-  // --- STAGE 1: VILLAGE QUEST ---
-  const s1Floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.MeshStandardMaterial({ color: 0x15803d }));
-  s1Floor.rotation.x = -Math.PI / 2;
-  stage1Group.add(s1Floor);
-
-  // Trees
-  for(let i = 0; i < 8; i++) {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 2), new THREE.MeshStandardMaterial({ color: 0x78350f }));
-    const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.5, 8), new THREE.MeshStandardMaterial({ color: 0x166534 }));
-    trunk.position.set((Math.random()-0.5)*24, 1, (Math.random()-0.5)*24);
-    leaves.position.set(trunk.position.x, 2.5, trunk.position.z);
-    stage1Group.add(trunk, leaves);
+  function moveRight() {
+    if (gameOver) return;
+    if (currentLane < 2) { currentLane++; playSound(400, 0.05); }
   }
-
-  // 3 Flowers
-  const flowerPositions = [{x: -8, z: -6}, {x: 8, z: -4}, {x: 0, z: 8}];
-  const stage1Flowers = [];
-  flowerPositions.forEach(pos => {
-    const f = new THREE.Mesh(new THREE.DodecahedronGeometry(0.4), new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.4 }));
-    f.position.set(pos.x, 0.5, pos.z);
-    stage1Group.add(f);
-    stage1Flowers.push({ mesh: f, x: pos.x, z: pos.z, collected: false });
-  });
-
-  // --- STAGE 2: VALLAMKALI RIVER RACE ---
-  const s2River = new THREE.Mesh(new THREE.PlaneGeometry(12, 60), new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2 }));
-  s2River.rotation.x = -Math.PI / 2;
-  s2River.position.z = -15;
-  stage2Group.add(s2River);
-
-  const rocks = [];
-  for(let i = 0; i < 6; i++) {
-    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.8), new THREE.MeshStandardMaterial({ color: 0x475569 }));
-    rock.position.set((Math.random()-0.5)*8, 0.5, -5 - i * 7);
-    stage2Group.add(rock);
-    rocks.push(rock);
-  }
-
-  const s2Goal = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 2), new THREE.MeshStandardMaterial({ color: 0xfde047 }));
-  s2Goal.position.set(0, 0.1, -42);
-  stage2Group.add(s2Goal);
-  stage2Group.visible = false;
-
-  // --- STAGE 3: PATHALA TEMPLE RUINS ---
-  const s3Floor = new THREE.Mesh(new THREE.PlaneGeometry(24, 24), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-  s3Floor.rotation.x = -Math.PI / 2;
-  stage3Group.add(s3Floor);
-
-  // Asura Guards
-  const guards = [
-    { mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 1.8), new THREE.MeshStandardMaterial({ color: 0xd97706 })), x: -6, z: -2, vx: 0.12 },
-    { mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 1.8), new THREE.MeshStandardMaterial({ color: 0xd97706 })), x: 6, z: -6, vx: -0.14 }
-  ];
-  guards.forEach(g => {
-    g.mesh.position.set(g.x, 0.9, g.z);
-    stage3Group.add(g.mesh);
-  });
-
-  // Golden Crown Goal
-  const goldenCrown = new THREE.Mesh(new THREE.OctahedronGeometry(0.7), new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xeab308, emissiveIntensity: 0.6 }));
-  goldenCrown.position.set(0, 0.8, -9);
-  stage3Group.add(goldenCrown);
-  stage3Group.visible = false;
-
-  // --- STAGE CONTROL LOGIC ---
-  function loadStage(stage) {
-    currentStage = stage;
-    stage1Group.visible = (stage === 1);
-    stage2Group.visible = (stage === 2);
-    stage3Group.visible = (stage === 3);
-
-    if (stage === 1) {
-      playerGroup.position.set(0, 0, 10);
-      camera.position.set(0, 20, 18);
-      camera.lookAt(0, 0, 0);
-      document.getElementById("stage-title").innerText = "🚩 Stage 1: Village Pookkalam Quest";
-      document.getElementById("objective-text").innerText = "Collect 3 Flowers in the Village!";
-    } else if (stage === 2) {
-      playerGroup.position.set(0, 0, 10);
-      camera.position.set(0, 14, 18);
-      document.getElementById("stage-title").innerText = "🚣 Stage 2: Vallamkali River Race";
-      document.getElementById("objective-text").innerText = "Dodge rocks and reach the golden finish line!";
-    } else if (stage === 3) {
-      playerGroup.position.set(0, 0, 9);
-      camera.position.set(0, 18, 16);
-      document.getElementById("stage-title").innerText = "👑 Stage 3: Pathala Temple Ruins";
-      document.getElementById("objective-text").innerText = "Outsmart the guards to retrieve the Golden Crown!";
+  function jump() {
+    if (gameOver) return;
+    if (isGrounded) {
+      velY = 0.38;
+      isGrounded = false;
+      playSound(600, 0.15);
     }
   }
 
-  loadStage(1);
+  window.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft" || e.key === "a") moveLeft();
+    if (e.key === "ArrowRight" || e.key === "d") moveRight();
+    if (e.key === "ArrowUp" || e.key === "w" || e.key === " ") jump();
+  });
 
-  // Game Loop Update
+  document.getElementById("btn-left").addEventListener("click", moveLeft);
+  document.getElementById("btn-right").addEventListener("click", moveRight);
+  document.getElementById("btn-jump").addEventListener("click", jump);
+
+  // Spawner Logic
+  let nextSpawnDistance = 0;
+
+  function spawnRow() {
+    const laneIndex = Math.floor(Math.random() * 3);
+    const type = Math.random();
+
+    // Spawn Asura Guard (Tall Obstacle)
+    if (type < 0.35) {
+      const guard = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.2, 16), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+      guard.position.set(LANES[laneIndex], 1.1, -120);
+      guard.castShadow = true;
+      scene.add(guard);
+      spawnedObjects.push({ mesh: guard, type: "guard", lane: laneIndex });
+    }
+    // Spawn Hurdle (Jumpable Low Obstacle)
+    else if (type < 0.65) {
+      const hurdle = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.7, 0.4), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+      hurdle.position.set(LANES[laneIndex], 0.35, -120);
+      hurdle.castShadow = true;
+      scene.add(hurdle);
+      spawnedObjects.push({ mesh: hurdle, type: "hurdle", lane: laneIndex });
+    }
+    // Spawn Flower Row (Collectible)
+    else {
+      for (let i = 0; i < 3; i++) {
+        const flower = new THREE.Mesh(new THREE.DodecahedronGeometry(0.45), new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.5 }));
+        flower.position.set(LANES[laneIndex], 0.6, -120 - (i * 4));
+        scene.add(flower);
+        spawnedObjects.push({ mesh: flower, type: "flower", lane: laneIndex });
+      }
+    }
+  }
+
+  function resetGame() {
+    spawnedObjects.forEach(obj => scene.remove(obj.mesh));
+    spawnedObjects.length = 0;
+    currentLane = 1;
+    playerGroup.position.set(LANES[1], 0, 0);
+    playerY = 0;
+    velY = 0;
+    isGrounded = true;
+    gameSpeed = 0.45;
+    distance = 0;
+    flowersCollected = 0;
+    gameOver = false;
+    document.getElementById("score-text").innerText = "Distance: 0m";
+    document.getElementById("flower-text").innerText = "🌺 0";
+  }
+
+  // Main Loop
   function update() {
-    if (gameOver || gameWon) return;
+    if (gameOver) return;
 
-    let dx = 0, dz = 0;
-    if (keys["ArrowUp"] || keys["w"] || keys["W"]) dz -= speed;
-    if (keys["ArrowDown"] || keys["s"] || keys["S"]) dz += speed;
-    if (keys["ArrowLeft"] || keys["a"] || keys["A"]) dx -= speed;
-    if (keys["ArrowRight"] || keys["d"] || keys["D"]) dx += speed;
+    // Smooth lane translation
+    playerGroup.position.x += (LANES[currentLane] - playerGroup.position.x) * 0.25;
 
-    playerGroup.position.x += dx;
-    playerGroup.position.z += dz;
+    // Gravity & Jump Physics
+    playerY += velY;
+    velY += gravity;
+    if (playerY <= 0) {
+      playerY = 0;
+      velY = 0;
+      isGrounded = true;
+    }
+    playerGroup.position.y = playerY;
 
-    // Stage 1 Rules
-    if (currentStage === 1) {
-      playerGroup.position.x = Math.max(-13, Math.min(13, playerGroup.position.x));
-      playerGroup.position.z = Math.max(-13, Math.min(13, playerGroup.position.z));
+    // Speed scaling & distance counter
+    gameSpeed += 0.00005;
+    distance += gameSpeed * 0.5;
+    document.getElementById("score-text").innerText = `Distance: ${Math.floor(distance)}m`;
 
-      stage1Flowers.forEach(f => {
-        if (!f.collected && Math.hypot(playerGroup.position.x - f.x, playerGroup.position.z - f.z) < 1.1) {
-          f.collected = true;
-          f.mesh.visible = false;
-          flowersCollected++;
-          playSound(600, 0.15);
-          document.getElementById("objective-text").innerText = `Flowers Collected: ${flowersCollected} / 3`;
-          if (flowersCollected === 3) {
-            playSound(880, 0.3);
-            setTimeout(() => loadStage(2), 600);
+    // Dynamic Spawning
+    if (distance > nextSpawnDistance) {
+      spawnRow();
+      nextSpawnDistance = distance + (12 + Math.random() * 8);
+    }
+
+    // Move Environment Trees endlessly
+    trees.forEach(tree => {
+      tree.position.z += gameSpeed;
+      if (tree.position.z > 20) tree.position.z -= 270;
+    });
+
+    // Move & Handle Active Objects
+    for (let i = spawnedObjects.length - 1; i >= 0; i--) {
+      const item = spawnedObjects[i];
+      item.mesh.position.z += gameSpeed;
+
+      if (item.type === "flower") item.mesh.rotation.y += 0.05;
+
+      // Check Collisions near Z = 0
+      if (Math.abs(item.mesh.position.z - playerGroup.position.z) < 1.0) {
+        if (item.lane === currentLane) {
+          
+          // Flower Pick
+          if (item.type === "flower") {
+            scene.remove(item.mesh);
+            spawnedObjects.splice(i, 1);
+            flowersCollected++;
+            playSound(800, 0.1);
+            document.getElementById("flower-text").innerText = `🌺 ${flowersCollected}`;
+            continue;
+          }
+
+          // Hurdle Collision (Dodge by Jumping)
+          if (item.type === "hurdle" && playerY < 0.7) {
+            triggerGameOver();
+          }
+
+          // Guard Collision (Cannot jump over)
+          if (item.type === "guard") {
+            triggerGameOver();
           }
         }
-      });
-    }
+      }
 
-    // Stage 2 Rules
-    else if (currentStage === 2) {
-      playerGroup.position.x = Math.max(-5, Math.min(5, playerGroup.position.x));
-      // Auto move down river
-      playerGroup.position.z -= 0.12;
-      camera.position.z = playerGroup.position.z + 8;
-      camera.position.y = 12;
-      camera.lookAt(playerGroup.position.x, 0, playerGroup.position.z - 4);
-
-      // Check Rock Collision
-      rocks.forEach(r => {
-        if (Math.hypot(playerGroup.position.x - r.position.x, playerGroup.position.z - r.position.z) < 1.2) {
-          gameOver = true;
-          playSound(140, 0.4, "sawtooth");
-          document.getElementById("objective-text").innerText = "Boat Crashed! Tap screen to restart stage.";
-        }
-      });
-
-      // Reach Finish Line
-      if (playerGroup.position.z < -41) {
-        playSound(880, 0.3);
-        loadStage(3);
+      // Despawn old objects
+      if (item.mesh.position.z > 15) {
+        scene.remove(item.mesh);
+        spawnedObjects.splice(i, 1);
       }
     }
+  }
 
-    // Stage 3 Rules
-    else if (currentStage === 3) {
-      playerGroup.position.x = Math.max(-10, Math.min(10, playerGroup.position.x));
-      playerGroup.position.z = Math.max(-10, Math.min(10, playerGroup.position.z));
-      camera.lookAt(0, 0, 0);
-
-      // Patrol Guards
-      guards.forEach(g => {
-        g.x += g.vx;
-        if (g.x < -8 || g.x > 8) g.vx *= -1;
-        g.mesh.position.x = g.x;
-
-        if (Math.hypot(playerGroup.position.x - g.x, playerGroup.position.z - g.z) < 1.3) {
-          gameOver = true;
-          playSound(140, 0.4, "sawtooth");
-          document.getElementById("objective-text").innerText = "Caught by Asura Guard! Tap screen to retry.";
-        }
-      });
-
-      // Retrieve Crown (Win Game)
-      goldenCrown.rotation.y += 0.03;
-      if (Math.hypot(playerGroup.position.x - goldenCrown.position.x, playerGroup.position.z - goldenCrown.position.z) < 1.2) {
-        gameWon = true;
-        playSound(900, 0.6);
-        document.getElementById("stage-title").innerText = "🎉 ONAM ODYSSEY COMPLETED! 🎉";
-        document.getElementById("objective-text").innerText = "King Maveli Restored Onam to Kerala!";
-      }
-    }
+  function triggerGameOver() {
+    gameOver = true;
+    playSound(150, 0.5, "sawtooth");
+    document.getElementById("score-text").innerText = `GAME OVER! Final Score: ${Math.floor(distance)}m`;
   }
 
   window.addEventListener("click", () => {
-    if (gameOver) {
-      gameOver = false;
-      loadStage(currentStage);
-    }
+    if (gameOver) resetGame();
   });
 
   function animate() {
@@ -357,4 +351,3 @@
 </script>
 </body>
 </html>
-
