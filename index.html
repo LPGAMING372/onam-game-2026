@@ -2,90 +2,88 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Maveli's Endless Pookkalam Dash 3D</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-    body {
-      background: #0f172a;
-      color: #fff;
+    html, body {
+      width: 100%; height: 100%;
+      background: #0f172a; color: #fff;
       font-family: 'Segoe UI', Roboto, sans-serif;
-      overflow: hidden;
+      overflow: hidden; touch-action: none;
     }
-    #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+    #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
 
-    /* UI Overlays */
+    /* UI Screens */
     .screen {
-      position: absolute;
-      top: 0; left: 0; width: 100vw; height: 100vh;
+      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       z-index: 20; background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(6px); padding: 10px;
     }
     .hidden { display: none !important; }
 
-    h1 { color: #f59e0b; font-size: 2rem; text-shadow: 2px 2px 4px #000; margin-bottom: 10px; text-align: center; }
-    h2 { color: #fde047; font-size: 1.3rem; margin-bottom: 15px; }
+    h1 { color: #f59e0b; font-size: 1.8rem; text-shadow: 2px 2px 4px #000; margin-bottom: 6px; text-align: center; }
+    h2 { color: #fde047; font-size: 1.1rem; margin-bottom: 10px; }
 
     .card {
-      background: rgba(30, 41, 59, 0.9);
-      border: 2px solid #f59e0b;
-      border-radius: 16px;
-      padding: 20px;
-      width: 90%;
-      max-width: 380px;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      background: rgba(30, 41, 59, 0.94);
+      border: 2px solid #f59e0b; border-radius: 16px;
+      padding: 16px; width: 100%; max-width: 420px;
+      text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      max-height: 85vh; overflow-y: auto;
+    }
+
+    input[type="text"] {
+      width: 100%; padding: 10px; margin: 8px 0;
+      border-radius: 8px; border: 1px solid #f59e0b;
+      background: #0f172a; color: #fff; font-size: 1rem; text-align: center;
     }
 
     .btn-main {
-      width: 100%;
-      padding: 14px;
-      margin: 8px 0;
+      width: 100%; padding: 12px; margin: 5px 0;
       background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: #fff;
-      font-weight: bold;
-      font-size: 1.1rem;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
+      color: #fff; font-weight: bold; font-size: 1rem;
+      border: none; border-radius: 12px; cursor: pointer;
       box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
     }
     .btn-main:active { transform: scale(0.97); }
     .btn-secondary { background: linear-gradient(135deg, #0284c7, #0369a1); }
-    .btn-close { background: #ef4444; margin-top: 15px; }
+    .btn-close { background: #ef4444; margin-top: 10px; }
 
     /* HUD */
     #hud {
-      position: absolute;
-      top: 15px; width: 100%;
-      display: flex; justify-content: space-between; padding: 0 20px;
-      z-index: 10; pointer-events: none;
-      font-weight: bold; font-size: 1.1rem; text-shadow: 1px 1px 3px #000;
+      position: absolute; top: 10px; width: 100%;
+      display: flex; justify-content: space-between; padding: 0 15px;
+      z-index: 10; pointer-events: none; font-weight: bold; font-size: 0.95rem;
     }
-    .hud-badge { background: rgba(0,0,0,0.6); padding: 8px 14px; border-radius: 20px; border: 1px solid #f59e0b; }
+    .hud-badge { background: rgba(0,0,0,0.65); padding: 6px 12px; border-radius: 20px; border: 1px solid #f59e0b; }
 
     /* Touch Controls */
     .controls {
-      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-      z-index: 10; display: flex; gap: 15px;
+      position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+      z-index: 10; display: flex; gap: 10px;
     }
     .ctrl-btn {
-      width: 60px; height: 60px;
-      background: rgba(245, 158, 11, 0.85); color: white;
-      font-size: 1.4rem; border: 2px solid #fff; border-radius: 50%;
+      width: 55px; height: 55px; background: rgba(245, 158, 11, 0.85);
+      color: white; font-size: 1.2rem; border: 2px solid #fff; border-radius: 50%;
       display: flex; align-items: center; justify-content: center; touch-action: manipulation;
     }
     .ctrl-btn:active { background: #b45309; }
-    #btn-jump { background: rgba(16, 185, 129, 0.85); width: 70px; border-radius: 18px; }
+    .action-btn { background: rgba(16, 185, 129, 0.85); width: 62px; border-radius: 16px; font-size: 0.85rem; font-weight: bold; }
 
-    /* Shop Items */
+    /* Leaderboard Table */
+    .lb-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
+    .lb-table th, .lb-table td { padding: 6px; border-bottom: 1px solid #334155; text-align: left; }
+    .lb-table th { color: #f59e0b; }
+
+    /* Shop Item */
     .shop-item {
       display: flex; justify-content: space-between; align-items: center;
-      background: rgba(15, 23, 42, 0.6); margin: 8px 0; padding: 10px 14px; border-radius: 10px;
+      background: rgba(15, 23, 42, 0.7); margin: 6px 0; padding: 8px; border-radius: 8px; border: 1px solid #334155;
     }
-    .shop-btn { padding: 6px 12px; background: #10b981; border: none; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; }
-    .shop-btn:disabled { background: #64748b; opacity: 0.6; }
+    .shop-btn { padding: 5px 10px; background: #10b981; border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer; }
+    .shop-btn:disabled { background: #64748b; opacity: 0.7; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -104,41 +102,58 @@
   <div id="screen-menu" class="screen">
     <h1>👑 Maveli Dash 3D</h1>
     <div class="card">
+      <input type="text" id="player-name" placeholder="Enter Runner Name..." maxlength="12" />
       <h2 id="menu-high-score">Best: 0m</h2>
       <h2>🌺 Total Flowers: <span id="menu-total-flowers">0</span></h2>
-      <button class="btn-main" id="btn-play">TAP TO PLAY</button>
-      <button class="btn-main btn-secondary" id="btn-open-shop">🛒 FLOWER STORE</button>
+      <button class="btn-main" id="btn-play">START DASH</button>
+      <button class="btn-main btn-secondary" id="btn-open-leaderboard">🏆 GLOBAL LEADERBOARD</button>
+      <button class="btn-main btn-secondary" id="btn-open-shop">🛍️ SHOP & SKINS</button>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD SCREEN -->
+  <div id="screen-leaderboard" class="screen hidden">
+    <div class="card">
+      <h2>🏆 Global Leaderboard</h2>
+      <div id="lb-loading">Loading Cloud Scores...</div>
+      <table class="lb-table hidden" id="lb-table">
+        <thead>
+          <tr><th>#</th><th>Runner</th><th>Distance</th></tr>
+        </thead>
+        <tbody id="lb-body"></tbody>
+      </table>
+      <button class="btn-main btn-close" id="btn-close-lb">BACK TO MENU</button>
     </div>
   </div>
 
   <!-- STORE SCREEN -->
   <div id="screen-shop" class="screen hidden">
     <div class="card">
-      <h2>🛒 Flower Store</h2>
-      <p style="margin-bottom:12px; color:#fde047;">Balance: 🌺 <span id="shop-balance">0</span></p>
+      <h2>🛍️ Wardrobe & Upgrades</h2>
+      <p style="margin-bottom:8px; color:#fde047;">Balance: 🌺 <span id="shop-balance">0</span></p>
 
+      <div style="font-weight:bold; text-align:left; color:#38bdf8; margin:4px 0;">⚡ Power-ups</div>
       <div class="shop-item">
-        <div style="text-align:left;">
-          <div>🛡️ Protection Shield</div>
-          <small style="color:#94a3b8">Survive 1 hit</small>
-        </div>
-        <button class="shop-btn" onclick="buyItem('shield', 15)">🌺 15</button>
+        <div style="text-align:left;"><div>🛡️ Shield</div><small style="color:#94a3b8">Absorbs 1 hit</small></div>
+        <button class="shop-btn" id="btn-buy-shield" onclick="buyItem('shield', 15)">🌺 15</button>
+      </div>
+      <div class="shop-item">
+        <div style="text-align:left;"><div>🧲 Magnet</div><small style="color:#94a3b8">Attracts flowers</small></div>
+        <button class="shop-btn" id="btn-buy-magnet" onclick="buyItem('magnet', 25)">🌺 25</button>
       </div>
 
+      <div style="font-weight:bold; text-align:left; color:#f59e0b; margin:8px 0 4px 0;">👔 Skins</div>
       <div class="shop-item">
-        <div style="text-align:left;">
-          <div>🧲 Flower Magnet</div>
-          <small style="color:#94a3b8">Attracts flowers</small>
-        </div>
-        <button class="shop-btn" onclick="buyItem('magnet', 25)">🌺 25</button>
+        <div style="text-align:left;"><div>👑 Classic Maveli</div></div>
+        <button class="shop-btn" id="skin-btn-classic" onclick="selectSkin('classic')">EQUIP</button>
       </div>
-
       <div class="shop-item">
-        <div style="text-align:left;">
-          <div>👑 Royal Golden Skin</div>
-          <small style="color:#94a3b8">Golden Aura</small>
-        </div>
-        <button class="shop-btn" id="btn-skin-buy" onclick="buyItem('skin', 50)">🌺 50</button>
+        <div style="text-align:left;"><div>✨ Royal Gold</div></div>
+        <button class="shop-btn" id="skin-btn-gold" onclick="buyOrSelectSkin('gold', 40)">🌺 40</button>
+      </div>
+      <div class="shop-item">
+        <div style="text-align:left;"><div>🔥 Pathala Demon</div></div>
+        <button class="shop-btn" id="skin-btn-demon" onclick="buyOrSelectSkin('demon', 75)">🌺 75</button>
       </div>
 
       <button class="btn-main btn-close" id="btn-close-shop">BACK TO MENU</button>
@@ -159,36 +174,33 @@
   <!-- TOUCH CONTROLS -->
   <div class="controls hidden" id="game-controls">
     <button class="ctrl-btn" id="ctrl-left">◄</button>
-    <button class="ctrl-btn" id="btn-jump">JUMP</button>
+    <button class="ctrl-btn action-btn" id="btn-slide">SLIDE</button>
+    <button class="ctrl-btn action-btn" id="btn-jump">JUMP</button>
     <button class="ctrl-btn" id="ctrl-right">►</button>
   </div>
 
 <script>
-  // Persistent Storage Initializer
-  let saveData = JSON.parse(localStorage.getItem('maveli_dash_save')) || {
+  // JSONBin Public Cloud Database Endpoint for Online Leaderboard
+  const BIN_ID = "66e2c882acd3cb34a8809b44"; 
+  const API_KEY = "$2a$10$w8T9J5X7.pM1Qz2B5uC9eeM5rK2oX2qU2Z8t3K7F8L8P4F9y7C2a6";
+
+  // Save Data
+  let saveData = JSON.parse(localStorage.getItem('maveli_runner_v2_save')) || {
+    playerName: 'MaveliRunner',
     highScore: 0,
     totalFlowers: 0,
     hasShield: false,
     hasMagnet: false,
-    hasGoldSkin: false
+    unlockedSkins: ['classic'],
+    activeSkin: 'classic'
   };
 
   function saveGame() {
-    localStorage.setItem('maveli_dash_save', JSON.stringify(saveData));
+    localStorage.setItem('maveli_runner_v2_save', JSON.stringify(saveData));
     updateUI();
   }
 
-  function updateUI() {
-    document.getElementById("menu-high-score").innerText = `Best: ${Math.floor(saveData.highScore)}m`;
-    document.getElementById("menu-total-flowers").innerText = saveData.totalFlowers;
-    document.getElementById("shop-balance").innerText = saveData.totalFlowers;
-    if (saveData.hasGoldSkin) {
-      document.getElementById("btn-skin-buy").innerText = "EQUIPPED";
-      document.getElementById("btn-skin-buy").disabled = true;
-    }
-  }
-
-  // Audio Synthesizer
+  // Audio Synth
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   function playSound(freq, duration, type = "sine") {
     if (audioCtx.state === "suspended") audioCtx.resume();
@@ -198,10 +210,8 @@
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
     gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
   }
 
   // Three.js Core Setup
@@ -216,6 +226,15 @@
   renderer.shadowMap.enabled = true;
   container.appendChild(renderer.domElement);
 
+  // Responsive Resize Handling
+  function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+  window.addEventListener('resize', onWindowResize);
+  window.addEventListener('orientationchange', () => setTimeout(onWindowResize, 200));
+
   // Lighting
   scene.add(new THREE.AmbientLight(0xffffff, 0.75));
   const dirLight = new THREE.DirectionalLight(0xfef08a, 0.9);
@@ -223,7 +242,7 @@
   dirLight.castShadow = true;
   scene.add(dirLight);
 
-  // Track & Lanes (-3.5, 0, 3.5)
+  // Track & Environment
   const LANES = [-3.5, 0, 3.5];
   let currentLane = 1;
 
@@ -236,208 +255,308 @@
   trackFloor.receiveShadow = true;
   scene.add(trackFloor);
 
-  // Environment Trees
   const trees = [];
   for (let z = 20; z > -250; z -= 12) {
     [-10, 10].forEach(x => {
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 2.5), new THREE.MeshStandardMaterial({ color: 0x78350f }));
       const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.5, 8), new THREE.MeshStandardMaterial({ color: 0x166534 }));
-      trunk.position.set(x, 1.25, z);
-      leaves.position.set(x, 3.5, z);
-      scene.add(trunk, leaves);
-      trees.push(trunk, leaves);
+      trunk.position.set(x, 1.25, z); leaves.position.set(x, 3.5, z);
+      scene.add(trunk, leaves); trees.push(trunk, leaves);
     });
   }
 
-  // Player (King Maveli)
+  // 3D Maveli Character Assembly
   const playerGroup = new THREE.Group();
-  const playerMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b });
-  const bodyMesh = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), playerMat);
-  bodyMesh.position.y = 0.8;
-  bodyMesh.castShadow = true;
-  playerGroup.add(bodyMesh);
+  const matBody = new THREE.MeshStandardMaterial({ color: 0xd97706 });
+  const matDhoti = new THREE.MeshStandardMaterial({ color: 0xffffff });
+  const matCrown = new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.8 });
+  const matUmbrella = new THREE.MeshStandardMaterial({ color: 0xb45309 });
 
-  const crownMesh = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.7, 8), new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.8 }));
-  crownMesh.position.y = 1.7;
-  playerGroup.add(crownMesh);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), matBody);
+  head.position.y = 1.6; playerGroup.add(head);
 
-  // Shield Visual Bubble
+  const crown = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.6, 8), matCrown);
+  crown.position.y = 2.1; playerGroup.add(crown);
+
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.65, 16, 16), matBody);
+  belly.position.y = 0.8; belly.scale.set(1.1, 1, 1); playerGroup.add(belly);
+
+  const dhoti = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 0.7, 16), matDhoti);
+  dhoti.position.y = 0.35; playerGroup.add(dhoti);
+
+  const umbrellaStick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8), matUmbrella);
+  umbrellaStick.position.set(0.75, 1.0, -0.1); playerGroup.add(umbrellaStick);
+
+  const umbrellaTop = new THREE.Mesh(new THREE.ConeGeometry(0.8, 0.3, 12), matUmbrella);
+  umbrellaTop.position.set(0.9, 1.85, -0.1); playerGroup.add(umbrellaTop);
+
   const shieldBubble = new THREE.Mesh(
-    new THREE.SphereGeometry(1.2, 16, 16),
+    new THREE.SphereGeometry(1.3, 16, 16),
     new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 })
   );
-  shieldBubble.position.y = 0.8;
-  shieldBubble.visible = false;
-  playerGroup.add(shieldBubble);
+  shieldBubble.position.y = 1.0; shieldBubble.visible = false; playerGroup.add(shieldBubble);
 
   scene.add(playerGroup);
 
-  // Game Engine Variables
-  let gameState = "MENU"; // MENU, PLAYING, GAMEOVER
-  let playerY = 0, velY = 0, gravity = -0.016, isGrounded = true;
-  let gameSpeed = 0.45, distance = 0, runFlowers = 0;
-  let activeShield = false, activeMagnet = false, boostTimer = 0;
-  const spawnedObjects = [];
-  let nextSpawnDistance = 0;
-
-  // Controls Logic
-  function moveLeft() { if (gameState === "PLAYING" && currentLane > 0) { currentLane--; playSound(400, 0.05); } }
-  function moveRight() { if (gameState === "PLAYING" && currentLane < 2) { currentLane++; playSound(400, 0.05); } }
-  function jump() {
-    if (gameState === "PLAYING" && isGrounded) {
-      velY = 0.38; isGrounded = false; playSound(600, 0.15);
+  function applySkin(skinName) {
+    if (skinName === 'classic') {
+      matBody.color.setHex(0xd97706); matDhoti.color.setHex(0xffffff); matCrown.color.setHex(0xfde047);
+    } else if (skinName === 'gold') {
+      matBody.color.setHex(0xfde047); matDhoti.color.setHex(0xf59e0b); matCrown.color.setHex(0xffffff);
+    } else if (skinName === 'demon') {
+      matBody.color.setHex(0xb91c1c); matDhoti.color.setHex(0x1e293b); matCrown.color.setHex(0xef4444);
     }
   }
 
+  // Movement & Game Mechanics State
+  let gameState = "MENU";
+  let playerY = 0, velY = 0, gravity = -0.016, isGrounded = true;
+  let isSliding = false, slideTimer = 0;
+  let gameSpeed = 0.45, distance = 0, runFlowers = 0;
+  let activeShield = false, activeMagnet = false, boostTimer = 0;
+  let runAnimCycle = 0;
+  const spawnedObjects = [];
+  let nextSpawnDistance = 0;
+
+  // Controls Logic (Keyboard + Swipe + Touch Buttons)
+  function moveLeft() { if (gameState === "PLAYING" && currentLane > 0) { currentLane--; playSound(400, 0.05); } }
+  function moveRight() { if (gameState === "PLAYING" && currentLane < 2) { currentLane++; playSound(400, 0.05); } }
+  function jump() {
+    if (gameState === "PLAYING" && isGrounded && !isSliding) {
+      velY = 0.38; isGrounded = false; playSound(600, 0.15);
+    }
+  }
+  function slide() {
+    if (gameState === "PLAYING" && !isSliding) {
+      isSliding = true; slideTimer = 45;
+      if (!isGrounded) velY = -0.3; // Fast drop if in air
+      playSound(300, 0.1);
+    }
+  }
+
+  // Inputs
   window.addEventListener("keydown", e => {
     if (e.key === "ArrowLeft" || e.key === "a") moveLeft();
     if (e.key === "ArrowRight" || e.key === "d") moveRight();
     if (e.key === "ArrowUp" || e.key === "w" || e.key === " ") jump();
+    if (e.key === "ArrowDown" || e.key === "s") slide();
   });
+
   document.getElementById("ctrl-left").addEventListener("click", moveLeft);
   document.getElementById("ctrl-right").addEventListener("click", moveRight);
   document.getElementById("btn-jump").addEventListener("click", jump);
+  document.getElementById("btn-slide").addEventListener("click", slide);
 
-  // Spawner Logic
+  // Spawner System (Includes High Hurdles for Sliding)
   function spawnRow() {
     const laneIndex = Math.floor(Math.random() * 3);
     const type = Math.random();
 
-    // Guard (Tall)
-    if (type < 0.30) {
+    // Guard (Tall Obstacle)
+    if (type < 0.25) {
       const g = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.2, 16), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
       g.position.set(LANES[laneIndex], 1.1, -120);
-      scene.add(g);
-      spawnedObjects.push({ mesh: g, type: "guard", lane: laneIndex });
+      scene.add(g); spawnedObjects.push({ mesh: g, type: "guard", lane: laneIndex });
     }
-    // Hurdle (Low Jumpable)
-    else if (type < 0.55) {
+    // High Overhead Arch (Duck / Slide under)
+    else if (type < 0.45) {
+      const arch = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 0.4), new THREE.MeshStandardMaterial({ color: 0x9333ea }));
+      arch.position.set(LANES[laneIndex], 1.7, -120);
+      scene.add(arch); spawnedObjects.push({ mesh: arch, type: "high_hurdle", lane: laneIndex });
+    }
+    // Low Hurdle (Jump over)
+    else if (type < 0.65) {
       const h = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.7, 0.4), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
       h.position.set(LANES[laneIndex], 0.35, -120);
-      scene.add(h);
-      spawnedObjects.push({ mesh: h, type: "hurdle", lane: laneIndex });
-    }
-    // Power-up Spawn (Shield / Turbo)
-    else if (type < 0.65) {
-      const isTurbo = Math.random() > 0.5;
-      const p = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.55),
-        new THREE.MeshStandardMaterial({ color: isTurbo ? 0x22c55e : 0x38bdf8, emissive: 0xffffff, emissiveIntensity: 0.5 })
-      );
-      p.position.set(LANES[laneIndex], 0.8, -120);
-      scene.add(p);
-      spawnedObjects.push({ mesh: p, type: isTurbo ? "power_turbo" : "power_shield", lane: laneIndex });
+      scene.add(h); spawnedObjects.push({ mesh: h, type: "hurdle", lane: laneIndex });
     }
     // Flowers
     else {
       for (let i = 0; i < 3; i++) {
         const f = new THREE.Mesh(new THREE.DodecahedronGeometry(0.45), new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.4 }));
         f.position.set(LANES[laneIndex], 0.6, -120 - (i * 4));
-        scene.add(f);
-        spawnedObjects.push({ mesh: f, type: "flower", lane: laneIndex });
+        scene.add(f); spawnedObjects.push({ mesh: f, type: "flower", lane: laneIndex });
       }
     }
   }
 
-  // Shop Buying System
+  // Online Leaderboard API Integration
+  async function fetchLeaderboard() {
+    document.getElementById("lb-loading").classList.remove("hidden");
+    document.getElementById("lb-table").classList.add("hidden");
+    try {
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+        headers: { "X-Master-Key": API_KEY }
+      });
+      const data = await res.json();
+      const scores = data.record.leaderboard || [];
+      
+      const tbody = document.getElementById("lb-body");
+      tbody.innerHTML = "";
+      scores.sort((a,b) => b.score - a.score).slice(0, 10).forEach((entry, idx) => {
+        tbody.innerHTML += `<tr><td>${idx + 1}</td><td>${entry.name}</td><td>${entry.score}m</td></tr>`;
+      });
+      document.getElementById("lb-loading").classList.add("hidden");
+      document.getElementById("lb-table").classList.remove("hidden");
+    } catch(e) {
+      document.getElementById("lb-loading").innerText = "Failed to load cloud scores.";
+    }
+  }
+
+  async function postScore(name, score) {
+    try {
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: { "X-Master-Key": API_KEY } });
+      const data = await res.json();
+      let scores = data.record.leaderboard || [];
+      
+      const existing = scores.find(s => s.name === name);
+      if (existing) {
+        if (score > existing.score) existing.score = score;
+      } else {
+        scores.push({ name: name, score: score });
+      }
+
+      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
+        body: JSON.stringify({ leaderboard: scores })
+      });
+    } catch(e) { console.log("Score Sync Error:", e); }
+  }
+
+  // Store Functions
   window.buyItem = function(item, cost) {
     if (saveData.totalFlowers >= cost) {
       saveData.totalFlowers -= cost;
       if (item === "shield") saveData.hasShield = true;
       if (item === "magnet") saveData.hasMagnet = true;
-      if (item === "skin") {
-        saveData.hasGoldSkin = true;
-        playerMat.color.setHex(0xfde047);
-        playerMat.metalness = 0.8;
-      }
-      playSound(880, 0.2);
-      saveGame();
-    } else {
-      playSound(150, 0.2, "sawtooth");
+      playSound(880, 0.2); saveGame();
     }
   };
 
+  window.selectSkin = function(skinName) {
+    saveData.activeSkin = skinName; applySkin(skinName); saveGame();
+  };
+
+  window.buyOrSelectSkin = function(skinName, cost) {
+    if (saveData.unlockedSkins.includes(skinName)) {
+      selectSkin(skinName);
+    } else if (saveData.totalFlowers >= cost) {
+      saveData.totalFlowers -= cost; saveData.unlockedSkins.push(skinName);
+      selectSkin(skinName); playSound(880, 0.2); saveGame();
+    }
+  };
+
+  function updateUI() {
+    document.getElementById("player-name").value = saveData.playerName;
+    document.getElementById("menu-high-score").innerText = `Best: ${Math.floor(saveData.highScore)}m`;
+    document.getElementById("menu-total-flowers").innerText = saveData.totalFlowers;
+    document.getElementById("shop-balance").innerText = saveData.totalFlowers;
+
+    document.getElementById("btn-buy-shield").innerText = saveData.hasShield ? "OWNED" : "🌺 15";
+    document.getElementById("btn-buy-shield").disabled = saveData.hasShield;
+    document.getElementById("btn-buy-magnet").innerText = saveData.hasMagnet ? "OWNED" : "🌺 25";
+    document.getElementById("btn-buy-magnet").disabled = saveData.hasMagnet;
+  }
+
   function startGame() {
+    const inputName = document.getElementById("player-name").value.trim();
+    if (inputName) saveData.playerName = inputName;
+    saveGame();
+
     spawnedObjects.forEach(obj => scene.remove(obj.mesh));
     spawnedObjects.length = 0;
-    currentLane = 1;
-    playerGroup.position.set(LANES[1], 0, 0);
-    playerY = 0; velY = 0; isGrounded = true;
+    currentLane = 1; playerGroup.position.set(LANES[1], 0, 0);
+    playerY = 0; velY = 0; isGrounded = true; isSliding = false;
     gameSpeed = 0.45; distance = 0; runFlowers = 0; boostTimer = 0;
 
-    activeShield = saveData.hasShield;
-    activeMagnet = saveData.hasMagnet;
-    shieldBubble.visible = activeShield;
-
-    if (saveData.hasGoldSkin) {
-      playerMat.color.setHex(0xfde047);
-      playerMat.metalness = 0.8;
-    }
+    activeShield = saveData.hasShield; activeMagnet = saveData.hasMagnet;
+    shieldBubble.visible = activeShield; applySkin(saveData.activeSkin);
 
     gameState = "PLAYING";
     document.getElementById("screen-menu").classList.add("hidden");
     document.getElementById("screen-gameover").classList.add("hidden");
     document.getElementById("hud").classList.remove("hidden");
     document.getElementById("game-controls").classList.remove("hidden");
-    document.getElementById("hud-powerup").innerText = activeShield ? "Shield: ACTIVE" : "Shield: NONE";
   }
 
   function gameOver() {
-    gameState = "GAMEOVER";
-    playSound(150, 0.5, "sawtooth");
+    gameState = "GAMEOVER"; playSound(150, 0.5, "sawtooth");
     
     saveData.totalFlowers += runFlowers;
-    if (distance > saveData.highScore) saveData.highScore = distance;
+    const finalScore = Math.floor(distance);
+    if (finalScore > saveData.highScore) saveData.highScore = finalScore;
     saveGame();
 
-    document.getElementById("go-score").innerText = `Score: ${Math.floor(distance)}m`;
+    postScore(saveData.playerName, finalScore);
+
+    document.getElementById("go-score").innerText = `Score: ${finalScore}m`;
     document.getElementById("go-flowers").innerText = `Flowers Picked: ${runFlowers}`;
     document.getElementById("screen-gameover").classList.remove("hidden");
     document.getElementById("hud").classList.add("hidden");
     document.getElementById("game-controls").classList.add("hidden");
   }
 
-  // UI Navigation
+  // Event Handlers
   document.getElementById("btn-play").addEventListener("click", startGame);
   document.getElementById("btn-restart").addEventListener("click", startGame);
   document.getElementById("btn-open-shop").addEventListener("click", () => {
-    document.getElementById("screen-shop").classList.remove("hidden");
+    gameState = "SHOP"; document.getElementById("screen-shop").classList.remove("hidden");
   });
   document.getElementById("btn-close-shop").addEventListener("click", () => {
-    document.getElementById("screen-shop").classList.add("hidden");
+    gameState = "MENU"; document.getElementById("screen-shop").classList.add("hidden");
+  });
+  document.getElementById("btn-open-leaderboard").addEventListener("click", () => {
+    document.getElementById("screen-leaderboard").classList.remove("hidden");
+    fetchLeaderboard();
+  });
+  document.getElementById("btn-close-lb").addEventListener("click", () => {
+    document.getElementById("screen-leaderboard").classList.add("hidden");
   });
   document.getElementById("btn-go-menu").addEventListener("click", () => {
-    document.getElementById("screen-gameover").classList.add("hidden");
-    document.getElementById("screen-menu").classList.remove("hidden");
-    updateUI();
+    gameState = "MENU"; document.getElementById("screen-gameover").classList.add("hidden");
+    document.getElementById("screen-menu").classList.remove("hidden"); updateUI();
   });
 
-  // Main Loop
+  // Main Render & Update Loop
   let menuCamAngle = 0;
   function update() {
     if (gameState === "MENU" || gameState === "SHOP") {
-      menuCamAngle += 0.008;
-      camera.position.set(Math.sin(menuCamAngle) * 9, 4, Math.cos(menuCamAngle) * 9);
-      camera.lookAt(0, 1, 0);
-      return;
+      menuCamAngle += 0.01; playerGroup.position.set(0, 0, 0); playerGroup.rotation.y = menuCamAngle;
+      camera.position.set(Math.sin(menuCamAngle) * 5, 2.2, Math.cos(menuCamAngle) * 5);
+      camera.lookAt(0, 1.2, 0); return;
     }
 
     if (gameState !== "PLAYING") return;
 
-    // Handle Boost Timer
+    // Movement & Physics Processing
     let effectiveSpeed = gameSpeed;
-    if (boostTimer > 0) {
-      boostTimer--;
-      effectiveSpeed = gameSpeed * 1.8;
+    if (boostTimer > 0) { boostTimer--; effectiveSpeed = gameSpeed * 1.85; }
+
+    // Sliding Mechanics
+    if (isSliding) {
+      slideTimer--;
+      playerGroup.scale.set(1, 0.5, 1);
+      if (slideTimer <= 0) { isSliding = false; playerGroup.scale.set(1, 1, 1); }
     }
 
-    // Lane Translation & Physics
-    playerGroup.position.x += (LANES[currentLane] - playerGroup.position.x) * 0.25;
+    // Lane Switch Smoothness & Tilting
+    const targetX = LANES[currentLane];
+    const dx = targetX - playerGroup.position.x;
+    playerGroup.position.x += dx * 0.25;
+    playerGroup.rotation.z = -dx * 0.15; // Body tilt into turns
+
+    // Gravity & Jump Arc
     playerY += velY; velY += gravity;
     if (playerY <= 0) { playerY = 0; velY = 0; isGrounded = true; }
     playerGroup.position.y = playerY;
 
-    // Camera follow during play
+    // Running Bobbing Animation
+    if (isGrounded && !isSliding) {
+      runAnimCycle += 0.2;
+      playerGroup.position.y += Math.sin(runAnimCycle) * 0.06;
+    }
+
     camera.position.set(0, 5, 9);
     camera.lookAt(0, 2, -10);
 
@@ -448,56 +567,37 @@
     document.getElementById("hud-flowers").innerText = `🌺 ${runFlowers}`;
 
     if (distance > nextSpawnDistance) {
-      spawnRow();
-      nextSpawnDistance = distance + (12 + Math.random() * 8);
+      spawnRow(); nextSpawnDistance = distance + (12 + Math.random() * 8);
     }
 
-    // Scroll Environment
-    trees.forEach(t => {
-      t.position.z += effectiveSpeed;
-      if (t.position.z > 20) t.position.z -= 270;
-    });
+    trees.forEach(t => { t.position.z += effectiveSpeed; if (t.position.z > 20) t.position.z -= 270; });
 
-    // Handle Spawns & Collisions
+    // Collisions
     for (let i = spawnedObjects.length - 1; i >= 0; i--) {
       const item = spawnedObjects[i];
       item.mesh.position.z += effectiveSpeed;
 
       if (item.type === "flower") {
         item.mesh.rotation.y += 0.05;
-        // Magnet effect
         if (activeMagnet && item.mesh.position.z > -25) {
           item.mesh.position.x += (playerGroup.position.x - item.mesh.position.x) * 0.2;
-          item.mesh.position.y += (playerGroup.position.y + 0.6 - item.mesh.position.y) * 0.2;
+          item.mesh.position.y += (playerGroup.position.y + 0.8 - item.mesh.position.y) * 0.2;
         }
       }
 
-      // Check Hit Box
       if (Math.abs(item.mesh.position.z - playerGroup.position.z) < 1.0) {
-        
-        // Flower Collect
         if (item.type === "flower" && (item.lane === currentLane || activeMagnet)) {
           scene.remove(item.mesh); spawnedObjects.splice(i, 1);
           runFlowers++; playSound(800, 0.08); continue;
         }
 
-        // Shield Powerup Pick
-        if (item.type === "power_shield" && item.lane === currentLane) {
-          scene.remove(item.mesh); spawnedObjects.splice(i, 1);
-          activeShield = true; shieldBubble.visible = true;
-          document.getElementById("hud-powerup").innerText = "Shield: ACTIVE";
-          playSound(900, 0.2); continue;
-        }
-
-        // Turbo Powerup Pick
-        if (item.type === "power_turbo" && item.lane === currentLane) {
-          scene.remove(item.mesh); spawnedObjects.splice(i, 1);
-          boostTimer = 180; playSound(1000, 0.3); continue;
-        }
-
-        // Obstacle Collisions
         if (boostTimer === 0 && item.lane === currentLane) {
-          if ((item.type === "hurdle" && playerY < 0.7) || item.type === "guard") {
+          let hit = false;
+          if (item.type === "guard") hit = true;
+          if (item.type === "hurdle" && playerY < 0.7) hit = true;
+          if (item.type === "high_hurdle" && !isSliding) hit = true; // High hurdles require sliding!
+
+          if (hit) {
             if (activeShield) {
               activeShield = false; shieldBubble.visible = false;
               scene.remove(item.mesh); spawnedObjects.splice(i, 1);
@@ -510,26 +610,16 @@
         }
       }
 
-      if (item.mesh.position.z > 15) {
-        scene.remove(item.mesh); spawnedObjects.splice(i, 1);
-      }
+      if (item.mesh.position.z > 15) { scene.remove(item.mesh); spawnedObjects.splice(i, 1); }
     }
   }
 
   function animate() {
-    requestAnimationFrame(animate);
-    update();
-    renderer.render(scene, camera);
+    requestAnimationFrame(animate); update(); renderer.render(scene, camera);
   }
 
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-
-  updateUI();
-  animate();
+  applySkin(saveData.activeSkin); updateUI(); animate();
 </script>
 </body>
 </html>
+
