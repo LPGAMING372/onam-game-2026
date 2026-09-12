@@ -9,76 +9,185 @@
     body {
       background: #0f172a;
       color: #fff;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', Roboto, sans-serif;
       overflow: hidden;
     }
-    #ui-header {
-      position: absolute;
-      top: 15px;
-      width: 100%;
-      text-align: center;
-      z-index: 10;
-      pointer-events: none;
-    }
-    h1 { color: #f59e0b; font-size: 1.3rem; text-shadow: 2px 2px #000; }
-    .status-bar {
-      color: #fde047;
-      font-weight: bold;
-      font-size: 1rem;
-      margin-top: 6px;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-    }
     #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
-    .controls {
+
+    /* UI Overlays */
+    .screen {
       position: absolute;
-      bottom: 25px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10;
-      display: flex;
-      gap: 15px;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 20; background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
     }
-    .btn {
-      width: 65px;
-      height: 65px;
-      background: rgba(217, 119, 6, 0.85);
-      color: white;
+    .hidden { display: none !important; }
+
+    h1 { color: #f59e0b; font-size: 2rem; text-shadow: 2px 2px 4px #000; margin-bottom: 10px; text-align: center; }
+    h2 { color: #fde047; font-size: 1.3rem; margin-bottom: 15px; }
+
+    .card {
+      background: rgba(30, 41, 59, 0.9);
+      border: 2px solid #f59e0b;
+      border-radius: 16px;
+      padding: 20px;
+      width: 90%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .btn-main {
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
       font-weight: bold;
-      font-size: 1.5rem;
-      border: 2px solid #fff;
-      border-radius: 50%;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 12px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      touch-action: manipulation;
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
     }
-    .btn:active { background: #b45309; transform: scale(0.92); }
-    #btn-jump { background: rgba(16, 185, 129, 0.85); font-size: 0.95rem; width: 75px; border-radius: 18px; }
+    .btn-main:active { transform: scale(0.97); }
+    .btn-secondary { background: linear-gradient(135deg, #0284c7, #0369a1); }
+    .btn-close { background: #ef4444; margin-top: 15px; }
+
+    /* HUD */
+    #hud {
+      position: absolute;
+      top: 15px; width: 100%;
+      display: flex; justify-content: space-between; padding: 0 20px;
+      z-index: 10; pointer-events: none;
+      font-weight: bold; font-size: 1.1rem; text-shadow: 1px 1px 3px #000;
+    }
+    .hud-badge { background: rgba(0,0,0,0.6); padding: 8px 14px; border-radius: 20px; border: 1px solid #f59e0b; }
+
+    /* Touch Controls */
+    .controls {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 10; display: flex; gap: 15px;
+    }
+    .ctrl-btn {
+      width: 60px; height: 60px;
+      background: rgba(245, 158, 11, 0.85); color: white;
+      font-size: 1.4rem; border: 2px solid #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; touch-action: manipulation;
+    }
+    .ctrl-btn:active { background: #b45309; }
+    #btn-jump { background: rgba(16, 185, 129, 0.85); width: 70px; border-radius: 18px; }
+
+    /* Shop Items */
+    .shop-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(15, 23, 42, 0.6); margin: 8px 0; padding: 10px 14px; border-radius: 10px;
+    }
+    .shop-btn { padding: 6px 12px; background: #10b981; border: none; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; }
+    .shop-btn:disabled { background: #64748b; opacity: 0.6; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-  <div id="ui-header">
-    <h1>🏃 Maveli's Endless Dash 🏃</h1>
-    <div class="status-bar">
-      <span id="score-text">Distance: 0m</span>
-      <span id="flower-text">🌺 0</span>
+  <div id="canvas-container"></div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-badge" id="hud-score">Distance: 0m</div>
+    <div class="hud-badge" id="hud-powerup" style="color:#38bdf8;">Shield: Ready</div>
+    <div class="hud-badge" id="hud-flowers">🌺 0</div>
+  </div>
+
+  <!-- MAIN MENU -->
+  <div id="screen-menu" class="screen">
+    <h1>👑 Maveli Dash 3D</h1>
+    <div class="card">
+      <h2 id="menu-high-score">Best: 0m</h2>
+      <h2>🌺 Total Flowers: <span id="menu-total-flowers">0</span></h2>
+      <button class="btn-main" id="btn-play">TAP TO PLAY</button>
+      <button class="btn-main btn-secondary" id="btn-open-shop">🛒 FLOWER STORE</button>
     </div>
   </div>
 
-  <div id="canvas-container"></div>
+  <!-- STORE SCREEN -->
+  <div id="screen-shop" class="screen hidden">
+    <div class="card">
+      <h2>🛒 Flower Store</h2>
+      <p style="margin-bottom:12px; color:#fde047;">Balance: 🌺 <span id="shop-balance">0</span></p>
 
-  <div class="controls">
-    <button class="btn" id="btn-left">◄</button>
-    <button class="btn" id="btn-jump">JUMP</button>
-    <button class="btn" id="btn-right">►</button>
+      <div class="shop-item">
+        <div style="text-align:left;">
+          <div>🛡️ Protection Shield</div>
+          <small style="color:#94a3b8">Survive 1 hit</small>
+        </div>
+        <button class="shop-btn" onclick="buyItem('shield', 15)">🌺 15</button>
+      </div>
+
+      <div class="shop-item">
+        <div style="text-align:left;">
+          <div>🧲 Flower Magnet</div>
+          <small style="color:#94a3b8">Attracts flowers</small>
+        </div>
+        <button class="shop-btn" onclick="buyItem('magnet', 25)">🌺 25</button>
+      </div>
+
+      <div class="shop-item">
+        <div style="text-align:left;">
+          <div>👑 Royal Golden Skin</div>
+          <small style="color:#94a3b8">Golden Aura</small>
+        </div>
+        <button class="shop-btn" id="btn-skin-buy" onclick="buyItem('skin', 50)">🌺 50</button>
+      </div>
+
+      <button class="btn-main btn-close" id="btn-close-shop">BACK TO MENU</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="screen-gameover" class="screen hidden">
+    <h1>💥 CRASHED!</h1>
+    <div class="card">
+      <h2 id="go-score">Score: 0m</h2>
+      <h2 id="go-flowers">Flowers Picked: 0</h2>
+      <button class="btn-main" id="btn-restart">RUN AGAIN</button>
+      <button class="btn-main btn-secondary" id="btn-go-menu">MAIN MENU</button>
+    </div>
+  </div>
+
+  <!-- TOUCH CONTROLS -->
+  <div class="controls hidden" id="game-controls">
+    <button class="ctrl-btn" id="ctrl-left">◄</button>
+    <button class="ctrl-btn" id="btn-jump">JUMP</button>
+    <button class="ctrl-btn" id="ctrl-right">►</button>
   </div>
 
 <script>
+  // Persistent Storage Initializer
+  let saveData = JSON.parse(localStorage.getItem('maveli_dash_save')) || {
+    highScore: 0,
+    totalFlowers: 0,
+    hasShield: false,
+    hasMagnet: false,
+    hasGoldSkin: false
+  };
+
+  function saveGame() {
+    localStorage.setItem('maveli_dash_save', JSON.stringify(saveData));
+    updateUI();
+  }
+
+  function updateUI() {
+    document.getElementById("menu-high-score").innerText = `Best: ${Math.floor(saveData.highScore)}m`;
+    document.getElementById("menu-total-flowers").innerText = saveData.totalFlowers;
+    document.getElementById("shop-balance").innerText = saveData.totalFlowers;
+    if (saveData.hasGoldSkin) {
+      document.getElementById("btn-skin-buy").innerText = "EQUIPPED";
+      document.getElementById("btn-skin-buy").disabled = true;
+    }
+  }
+
   // Audio Synthesizer
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   function playSound(freq, duration, type = "sine") {
@@ -102,23 +211,19 @@
   scene.fog = new THREE.FogExp2(0x0284c7, 0.012);
 
   const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 5, 9);
-  camera.lookAt(0, 2, -10);
-
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   container.appendChild(renderer.domElement);
 
   // Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
-  scene.add(ambientLight);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
   const dirLight = new THREE.DirectionalLight(0xfef08a, 0.9);
   dirLight.position.set(10, 20, 10);
   dirLight.castShadow = true;
   scene.add(dirLight);
 
-  // Track & Environment Lanes (-3.5, 0, 3.5)
+  // Track & Lanes (-3.5, 0, 3.5)
   const LANES = [-3.5, 0, 3.5];
   let currentLane = 1;
 
@@ -131,7 +236,7 @@
   trackFloor.receiveShadow = true;
   scene.add(trackFloor);
 
-  // Decorative Side Trees
+  // Environment Trees
   const trees = [];
   for (let z = 20; z > -250; z -= 12) {
     [-10, 10].forEach(x => {
@@ -146,7 +251,8 @@
 
   // Player (King Maveli)
   const playerGroup = new THREE.Group();
-  const bodyMesh = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
+  const playerMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b });
+  const bodyMesh = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), playerMat);
   bodyMesh.position.y = 0.8;
   bodyMesh.castShadow = true;
   playerGroup.add(bodyMesh);
@@ -154,39 +260,32 @@
   const crownMesh = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.7, 8), new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.8 }));
   crownMesh.position.y = 1.7;
   playerGroup.add(crownMesh);
-  
-  playerGroup.position.set(LANES[currentLane], 0, 0);
+
+  // Shield Visual Bubble
+  const shieldBubble = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2, 16, 16),
+    new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 })
+  );
+  shieldBubble.position.y = 0.8;
+  shieldBubble.visible = false;
+  playerGroup.add(shieldBubble);
+
   scene.add(playerGroup);
 
-  // Jump Variables
-  let playerY = 0;
-  let velY = 0;
-  const gravity = -0.016;
-  let isGrounded = true;
+  // Game Engine Variables
+  let gameState = "MENU"; // MENU, PLAYING, GAMEOVER
+  let playerY = 0, velY = 0, gravity = -0.016, isGrounded = true;
+  let gameSpeed = 0.45, distance = 0, runFlowers = 0;
+  let activeShield = false, activeMagnet = false, boostTimer = 0;
+  const spawnedObjects = [];
+  let nextSpawnDistance = 0;
 
-  // Game Engine State
-  let gameSpeed = 0.45;
-  let distance = 0;
-  let flowersCollected = 0;
-  let gameOver = false;
-
-  const spawnedObjects = []; // Holds active obstacles and flowers
-
-  // Controls
-  function moveLeft() {
-    if (gameOver) return;
-    if (currentLane > 0) { currentLane--; playSound(400, 0.05); }
-  }
-  function moveRight() {
-    if (gameOver) return;
-    if (currentLane < 2) { currentLane++; playSound(400, 0.05); }
-  }
+  // Controls Logic
+  function moveLeft() { if (gameState === "PLAYING" && currentLane > 0) { currentLane--; playSound(400, 0.05); } }
+  function moveRight() { if (gameState === "PLAYING" && currentLane < 2) { currentLane++; playSound(400, 0.05); } }
   function jump() {
-    if (gameOver) return;
-    if (isGrounded) {
-      velY = 0.38;
-      isGrounded = false;
-      playSound(600, 0.15);
+    if (gameState === "PLAYING" && isGrounded) {
+      velY = 0.38; isGrounded = false; playSound(600, 0.15);
     }
   }
 
@@ -195,145 +294,227 @@
     if (e.key === "ArrowRight" || e.key === "d") moveRight();
     if (e.key === "ArrowUp" || e.key === "w" || e.key === " ") jump();
   });
-
-  document.getElementById("btn-left").addEventListener("click", moveLeft);
-  document.getElementById("btn-right").addEventListener("click", moveRight);
+  document.getElementById("ctrl-left").addEventListener("click", moveLeft);
+  document.getElementById("ctrl-right").addEventListener("click", moveRight);
   document.getElementById("btn-jump").addEventListener("click", jump);
 
   // Spawner Logic
-  let nextSpawnDistance = 0;
-
   function spawnRow() {
     const laneIndex = Math.floor(Math.random() * 3);
     const type = Math.random();
 
-    // Spawn Asura Guard (Tall Obstacle)
-    if (type < 0.35) {
-      const guard = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.2, 16), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
-      guard.position.set(LANES[laneIndex], 1.1, -120);
-      guard.castShadow = true;
-      scene.add(guard);
-      spawnedObjects.push({ mesh: guard, type: "guard", lane: laneIndex });
+    // Guard (Tall)
+    if (type < 0.30) {
+      const g = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.2, 16), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+      g.position.set(LANES[laneIndex], 1.1, -120);
+      scene.add(g);
+      spawnedObjects.push({ mesh: g, type: "guard", lane: laneIndex });
     }
-    // Spawn Hurdle (Jumpable Low Obstacle)
+    // Hurdle (Low Jumpable)
+    else if (type < 0.55) {
+      const h = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.7, 0.4), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+      h.position.set(LANES[laneIndex], 0.35, -120);
+      scene.add(h);
+      spawnedObjects.push({ mesh: h, type: "hurdle", lane: laneIndex });
+    }
+    // Power-up Spawn (Shield / Turbo)
     else if (type < 0.65) {
-      const hurdle = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.7, 0.4), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
-      hurdle.position.set(LANES[laneIndex], 0.35, -120);
-      hurdle.castShadow = true;
-      scene.add(hurdle);
-      spawnedObjects.push({ mesh: hurdle, type: "hurdle", lane: laneIndex });
+      const isTurbo = Math.random() > 0.5;
+      const p = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.55),
+        new THREE.MeshStandardMaterial({ color: isTurbo ? 0x22c55e : 0x38bdf8, emissive: 0xffffff, emissiveIntensity: 0.5 })
+      );
+      p.position.set(LANES[laneIndex], 0.8, -120);
+      scene.add(p);
+      spawnedObjects.push({ mesh: p, type: isTurbo ? "power_turbo" : "power_shield", lane: laneIndex });
     }
-    // Spawn Flower Row (Collectible)
+    // Flowers
     else {
       for (let i = 0; i < 3; i++) {
-        const flower = new THREE.Mesh(new THREE.DodecahedronGeometry(0.45), new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.5 }));
-        flower.position.set(LANES[laneIndex], 0.6, -120 - (i * 4));
-        scene.add(flower);
-        spawnedObjects.push({ mesh: flower, type: "flower", lane: laneIndex });
+        const f = new THREE.Mesh(new THREE.DodecahedronGeometry(0.45), new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.4 }));
+        f.position.set(LANES[laneIndex], 0.6, -120 - (i * 4));
+        scene.add(f);
+        spawnedObjects.push({ mesh: f, type: "flower", lane: laneIndex });
       }
     }
   }
 
-  function resetGame() {
+  // Shop Buying System
+  window.buyItem = function(item, cost) {
+    if (saveData.totalFlowers >= cost) {
+      saveData.totalFlowers -= cost;
+      if (item === "shield") saveData.hasShield = true;
+      if (item === "magnet") saveData.hasMagnet = true;
+      if (item === "skin") {
+        saveData.hasGoldSkin = true;
+        playerMat.color.setHex(0xfde047);
+        playerMat.metalness = 0.8;
+      }
+      playSound(880, 0.2);
+      saveGame();
+    } else {
+      playSound(150, 0.2, "sawtooth");
+    }
+  };
+
+  function startGame() {
     spawnedObjects.forEach(obj => scene.remove(obj.mesh));
     spawnedObjects.length = 0;
     currentLane = 1;
     playerGroup.position.set(LANES[1], 0, 0);
-    playerY = 0;
-    velY = 0;
-    isGrounded = true;
-    gameSpeed = 0.45;
-    distance = 0;
-    flowersCollected = 0;
-    gameOver = false;
-    document.getElementById("score-text").innerText = "Distance: 0m";
-    document.getElementById("flower-text").innerText = "🌺 0";
+    playerY = 0; velY = 0; isGrounded = true;
+    gameSpeed = 0.45; distance = 0; runFlowers = 0; boostTimer = 0;
+
+    activeShield = saveData.hasShield;
+    activeMagnet = saveData.hasMagnet;
+    shieldBubble.visible = activeShield;
+
+    if (saveData.hasGoldSkin) {
+      playerMat.color.setHex(0xfde047);
+      playerMat.metalness = 0.8;
+    }
+
+    gameState = "PLAYING";
+    document.getElementById("screen-menu").classList.add("hidden");
+    document.getElementById("screen-gameover").classList.add("hidden");
+    document.getElementById("hud").classList.remove("hidden");
+    document.getElementById("game-controls").classList.remove("hidden");
+    document.getElementById("hud-powerup").innerText = activeShield ? "Shield: ACTIVE" : "Shield: NONE";
   }
 
+  function gameOver() {
+    gameState = "GAMEOVER";
+    playSound(150, 0.5, "sawtooth");
+    
+    saveData.totalFlowers += runFlowers;
+    if (distance > saveData.highScore) saveData.highScore = distance;
+    saveGame();
+
+    document.getElementById("go-score").innerText = `Score: ${Math.floor(distance)}m`;
+    document.getElementById("go-flowers").innerText = `Flowers Picked: ${runFlowers}`;
+    document.getElementById("screen-gameover").classList.remove("hidden");
+    document.getElementById("hud").classList.add("hidden");
+    document.getElementById("game-controls").classList.add("hidden");
+  }
+
+  // UI Navigation
+  document.getElementById("btn-play").addEventListener("click", startGame);
+  document.getElementById("btn-restart").addEventListener("click", startGame);
+  document.getElementById("btn-open-shop").addEventListener("click", () => {
+    document.getElementById("screen-shop").classList.remove("hidden");
+  });
+  document.getElementById("btn-close-shop").addEventListener("click", () => {
+    document.getElementById("screen-shop").classList.add("hidden");
+  });
+  document.getElementById("btn-go-menu").addEventListener("click", () => {
+    document.getElementById("screen-gameover").classList.add("hidden");
+    document.getElementById("screen-menu").classList.remove("hidden");
+    updateUI();
+  });
+
   // Main Loop
+  let menuCamAngle = 0;
   function update() {
-    if (gameOver) return;
-
-    // Smooth lane translation
-    playerGroup.position.x += (LANES[currentLane] - playerGroup.position.x) * 0.25;
-
-    // Gravity & Jump Physics
-    playerY += velY;
-    velY += gravity;
-    if (playerY <= 0) {
-      playerY = 0;
-      velY = 0;
-      isGrounded = true;
+    if (gameState === "MENU" || gameState === "SHOP") {
+      menuCamAngle += 0.008;
+      camera.position.set(Math.sin(menuCamAngle) * 9, 4, Math.cos(menuCamAngle) * 9);
+      camera.lookAt(0, 1, 0);
+      return;
     }
+
+    if (gameState !== "PLAYING") return;
+
+    // Handle Boost Timer
+    let effectiveSpeed = gameSpeed;
+    if (boostTimer > 0) {
+      boostTimer--;
+      effectiveSpeed = gameSpeed * 1.8;
+    }
+
+    // Lane Translation & Physics
+    playerGroup.position.x += (LANES[currentLane] - playerGroup.position.x) * 0.25;
+    playerY += velY; velY += gravity;
+    if (playerY <= 0) { playerY = 0; velY = 0; isGrounded = true; }
     playerGroup.position.y = playerY;
 
-    // Speed scaling & distance counter
-    gameSpeed += 0.00005;
-    distance += gameSpeed * 0.5;
-    document.getElementById("score-text").innerText = `Distance: ${Math.floor(distance)}m`;
+    // Camera follow during play
+    camera.position.set(0, 5, 9);
+    camera.lookAt(0, 2, -10);
 
-    // Dynamic Spawning
+    // Progression
+    gameSpeed += 0.00004;
+    distance += effectiveSpeed * 0.5;
+    document.getElementById("hud-score").innerText = `Distance: ${Math.floor(distance)}m`;
+    document.getElementById("hud-flowers").innerText = `🌺 ${runFlowers}`;
+
     if (distance > nextSpawnDistance) {
       spawnRow();
       nextSpawnDistance = distance + (12 + Math.random() * 8);
     }
 
-    // Move Environment Trees endlessly
-    trees.forEach(tree => {
-      tree.position.z += gameSpeed;
-      if (tree.position.z > 20) tree.position.z -= 270;
+    // Scroll Environment
+    trees.forEach(t => {
+      t.position.z += effectiveSpeed;
+      if (t.position.z > 20) t.position.z -= 270;
     });
 
-    // Move & Handle Active Objects
+    // Handle Spawns & Collisions
     for (let i = spawnedObjects.length - 1; i >= 0; i--) {
       const item = spawnedObjects[i];
-      item.mesh.position.z += gameSpeed;
+      item.mesh.position.z += effectiveSpeed;
 
-      if (item.type === "flower") item.mesh.rotation.y += 0.05;
+      if (item.type === "flower") {
+        item.mesh.rotation.y += 0.05;
+        // Magnet effect
+        if (activeMagnet && item.mesh.position.z > -25) {
+          item.mesh.position.x += (playerGroup.position.x - item.mesh.position.x) * 0.2;
+          item.mesh.position.y += (playerGroup.position.y + 0.6 - item.mesh.position.y) * 0.2;
+        }
+      }
 
-      // Check Collisions near Z = 0
+      // Check Hit Box
       if (Math.abs(item.mesh.position.z - playerGroup.position.z) < 1.0) {
-        if (item.lane === currentLane) {
-          
-          // Flower Pick
-          if (item.type === "flower") {
-            scene.remove(item.mesh);
-            spawnedObjects.splice(i, 1);
-            flowersCollected++;
-            playSound(800, 0.1);
-            document.getElementById("flower-text").innerText = `🌺 ${flowersCollected}`;
-            continue;
-          }
+        
+        // Flower Collect
+        if (item.type === "flower" && (item.lane === currentLane || activeMagnet)) {
+          scene.remove(item.mesh); spawnedObjects.splice(i, 1);
+          runFlowers++; playSound(800, 0.08); continue;
+        }
 
-          // Hurdle Collision (Dodge by Jumping)
-          if (item.type === "hurdle" && playerY < 0.7) {
-            triggerGameOver();
-          }
+        // Shield Powerup Pick
+        if (item.type === "power_shield" && item.lane === currentLane) {
+          scene.remove(item.mesh); spawnedObjects.splice(i, 1);
+          activeShield = true; shieldBubble.visible = true;
+          document.getElementById("hud-powerup").innerText = "Shield: ACTIVE";
+          playSound(900, 0.2); continue;
+        }
 
-          // Guard Collision (Cannot jump over)
-          if (item.type === "guard") {
-            triggerGameOver();
+        // Turbo Powerup Pick
+        if (item.type === "power_turbo" && item.lane === currentLane) {
+          scene.remove(item.mesh); spawnedObjects.splice(i, 1);
+          boostTimer = 180; playSound(1000, 0.3); continue;
+        }
+
+        // Obstacle Collisions
+        if (boostTimer === 0 && item.lane === currentLane) {
+          if ((item.type === "hurdle" && playerY < 0.7) || item.type === "guard") {
+            if (activeShield) {
+              activeShield = false; shieldBubble.visible = false;
+              scene.remove(item.mesh); spawnedObjects.splice(i, 1);
+              document.getElementById("hud-powerup").innerText = "Shield: BROKEN";
+              playSound(300, 0.3);
+            } else {
+              gameOver();
+            }
           }
         }
       }
 
-      // Despawn old objects
       if (item.mesh.position.z > 15) {
-        scene.remove(item.mesh);
-        spawnedObjects.splice(i, 1);
+        scene.remove(item.mesh); spawnedObjects.splice(i, 1);
       }
     }
   }
-
-  function triggerGameOver() {
-    gameOver = true;
-    playSound(150, 0.5, "sawtooth");
-    document.getElementById("score-text").innerText = `GAME OVER! Final Score: ${Math.floor(distance)}m`;
-  }
-
-  window.addEventListener("click", () => {
-    if (gameOver) resetGame();
-  });
 
   function animate() {
     requestAnimationFrame(animate);
@@ -347,6 +528,7 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
+  updateUI();
   animate();
 </script>
 </body>
